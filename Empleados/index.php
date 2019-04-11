@@ -4,7 +4,7 @@
     $txtApellidoP = (isset($_POST['txtApellidoP'])) ? $_POST['txtApellidoP'] : "";
     $txtApellidoM = (isset($_POST['txtApellidoM'])) ? $_POST['txtApellidoM'] : "";
     $txtCorreo = (isset($_POST['txtCorreo'])) ? $_POST['txtCorreo'] : "";
-    $txtFoto = (isset($_POST['txtFoto'])) ? $_POST['txtFoto'] : "";
+    $txtFoto = (isset($_FILES["txtFoto"]["name"])) ? $_FILES["txtFoto"]["name"] : "";
 
     $accion = (isset($_POST['accion'])) ? $_POST['accion'] : "";
 
@@ -18,26 +18,55 @@
             $sentencia->bindParam(':ApellidoP', $txtApellidoP);
             $sentencia->bindParam(':ApellidoM', $txtApellidoM);
             $sentencia->bindParam(':Correo', $txtCorreo);
-            $sentencia->bindParam(':Foto', $txtFoto);
+            $fecha = new DateTime();
+            $nombreArchivo = ($txtFoto!="")?$fecha->getTimestamp()."_".$_FILES["txtFoto"]["name"]:"imagen.png";
+            $tmpFoto = $_FILES["txtFoto"]["tmp_name"];
+            if($tmpFoto!=""){
+                move_uploaded_file($tmpFoto, "../Imagenes/" .$nombreArchivo);
+            }
+            $sentencia->bindParam(':Foto', $nombreArchivo);
             $sentencia->execute();
             header('Location: index.php');
         break;
 
         case "btnModificar":
             echo "btnModificar";
-            $sentencia = $pdo->prepare("UPDATE empleados SET Nombre=:Nombre, ApellidoP=:ApellidoP , ApellidoM=:ApellidoM ,Correo=:Correo ,Foto=:Foto WHERE ID=:id");
+            $sentencia = $pdo->prepare("UPDATE empleados SET Nombre=:Nombre, ApellidoP=:ApellidoP , ApellidoM=:ApellidoM ,Correo=:Correo  WHERE ID=:id");
             $sentencia->bindParam(':Nombre', $txtNombre);
             $sentencia->bindParam(':ApellidoP', $txtApellidoP);
             $sentencia->bindParam(':ApellidoM', $txtApellidoM);
             $sentencia->bindParam(':Correo', $txtCorreo);
-            $sentencia->bindParam(':Foto', $txtFoto);
             $sentencia->bindParam(':id', $txtId);
             $sentencia->execute();
-            header('Location: index.php');
+
+            $fecha = new DateTime();
+            $nombreArchivo = ($txtFoto!="")?$fecha->getTimestamp()."_".$_FILES["txtFoto"]["name"]:"imagen.png";
+            $tmpFoto = $_FILES["txtFoto"]["tmp_name"];
+            if($tmpFoto!=""){
+                move_uploaded_file($tmpFoto, "../Imagenes/" .$nombreArchivo);
+                $sentencia = $pdo->prepare("UPDATE empleados SET Foto=:Foto  WHERE ID=:id");
+                $sentencia->bindParam(':Foto', $nombreArchivo);
+                $sentencia->bindParam(':id', $txtId);
+                $sentencia->execute();
+                header('Location: index.php');
+            }
+
+            
         break;
 
         case "btnEliminar":
             echo "btnEliminar";
+            $sentencia = $pdo->prepare("SELECT Foto FROM empleados WHERE ID=:id");
+            $sentencia->bindParam(':id', $txtId);
+            $sentencia->execute();
+            $empleado = $sentencia->fetch(PDO::FETCH_LAZY);
+
+            if(isset($empleado["Foto"])){
+                if(file_exists("../Imagenes/".$empleado["Foto"])){
+                    unlink("../Imagenes/".$empleado["Foto"]);
+                }
+            }
+
             $sentencia = $pdo->prepare("DELETE FROM empleados WHERE ID=:id");
             $sentencia->bindParam(':id', $txtId);
             $sentencia->execute();
@@ -69,7 +98,7 @@
 </head>
 <body>
     <div class="container">
-        <form action="" method="post" ectype="multipart/form-data">
+        <form action="" method="post" enctype="multipart/form-data">
         <label for="txtId">Id:</label>
             <input type="text" name="txtId" placeholder="" id="txtId" require="" value="<?php echo $txtId; ?>">
             <br>
@@ -86,7 +115,7 @@
             <input type="text" name="txtCorreo" placeholder="" id="txtCorreo" require="" value="<?php echo $txtCorreo; ?>">
             <br>
             <label for="txtFoto">Foto:</label>
-            <input type="text" name="txtFoto" placeholder="" id="txtFoto" require="" value="<?php echo $txtFoto; ?>">
+            <input type="file" accept="image/*" name="txtFoto" placeholder="" id="txtFoto" require="" value="<?php echo $txtFoto; ?>">
             <br>
             
             <button value="btnAgregar" type="submit" name="accion">Agregar</button>
@@ -108,7 +137,7 @@
                 <!-- <tbody> -->
                     <?php foreach($listaEmpleados as $empleado){ ?>
                         <tr>
-                            <td><?php echo $empleado['Foto']; ?></td>
+                            <td><img class="img-thumbnail" width="100px" src="../Imagenes/<?php echo $empleado['Foto']; ?>" alt="<?php echo $empleado['Foto']; ?>"></td>
                             <td><?php echo $empleado['Nombre']; ?> <?php echo $empleado['ApellidoP']; ?> <?php echo $empleado['ApellidoM']; ?></td>
                             <td><?php echo $empleado['Correo']; ?></td>
                             <td>
