@@ -43,7 +43,20 @@
             $nombreArchivo = ($txtFoto!="")?$fecha->getTimestamp()."_".$_FILES["txtFoto"]["name"]:"imagen.png";
             $tmpFoto = $_FILES["txtFoto"]["tmp_name"];
             if($tmpFoto!=""){
+                // subimos la foto al servidor
                 move_uploaded_file($tmpFoto, "../Imagenes/" .$nombreArchivo);
+                // eliminamos la fotografia actual
+                $sentencia = $pdo->prepare("SELECT Foto FROM empleados WHERE ID=:id");
+                $sentencia->bindParam(':id', $txtId);
+                $sentencia->execute();
+                $empleado = $sentencia->fetch(PDO::FETCH_LAZY);
+
+                if(isset($empleado["Foto"])){
+                    if(file_exists("../Imagenes/".$empleado["Foto"])){
+                        unlink("../Imagenes/".$empleado["Foto"]);
+                    }
+                }
+                // actualizamos el link de la foto subida
                 $sentencia = $pdo->prepare("UPDATE empleados SET Foto=:Foto  WHERE ID=:id");
                 $sentencia->bindParam(':Foto', $nombreArchivo);
                 $sentencia->bindParam(':id', $txtId);
@@ -99,20 +112,20 @@
 <body>
     <div class="container">
         <form action="" method="post" enctype="multipart/form-data">
-        <label for="txtId">Id:</label>
-            <input type="text" name="txtId" placeholder="" id="txtId" require="" value="<?php echo $txtId; ?>">
-            <br>
+        
+            <input type="hidden" required name="txtId" placeholder="" id="txtId" require="" value="<?php echo $txtId; ?>">
+        
             <label for="txtNombre">Nombre:</label>
-            <input type="text" name="txtNombre" placeholder="" id="txtNombre" require="" value="<?php echo $txtNombre; ?>">
+            <input type="text" required name="txtNombre" placeholder="" id="txtNombre" require="" value="<?php echo $txtNombre; ?>">
             <br>
             <label for="txtApellidoP">Apellido:</label>
-            <input type="text" name="txtApellidoP" placeholder="" id="txtApellidoP" require="" value="<?php echo $txtApellidoP; ?>">
+            <input type="text" required name="txtApellidoP" placeholder="" id="txtApellidoP" require="" value="<?php echo $txtApellidoP; ?>">
             <br>
             <label for="txtApellidoM">Apellido:</label>
-            <input type="text" name="txtApellidoM" placeholder="" id="txtApellidoM" require="" value="<?php echo $txtApellidoM; ?>">
+            <input type="text" required name="txtApellidoM" placeholder="" id="txtApellidoM" require="" value="<?php echo $txtApellidoM; ?>">
             <br>
             <label for="txtCorreo">Correo:</label>
-            <input type="text" name="txtCorreo" placeholder="" id="txtCorreo" require="" value="<?php echo $txtCorreo; ?>">
+            <input type="email" required name="txtCorreo" placeholder="" id="txtCorreo" require="" value="<?php echo $txtCorreo; ?>">
             <br>
             <label for="txtFoto">Foto:</label>
             <input type="file" accept="image/*" name="txtFoto" placeholder="" id="txtFoto" require="" value="<?php echo $txtFoto; ?>">
