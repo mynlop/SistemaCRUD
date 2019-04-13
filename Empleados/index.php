@@ -8,11 +8,14 @@
 
     $accion = (isset($_POST['accion'])) ? $_POST['accion'] : "";
 
+    $accionAgregar = "";
+    $accionModificar = $accionEliminar = $accionCancelar = "disabled";
+    $mostrarModal = false;
+
     include("../Conexion/conexion.php");
 
     switch($accion){
         case "btnAgregar":
-            echo "btnAgregar";
             $sentencia = $pdo->prepare("INSERT INTO empleados(Nombre,ApellidoP,ApellidoM,Correo,Foto) VALUES (:Nombre, :ApellidoP, :ApellidoM, :Correo, :Foto)");
             $sentencia->bindParam(':Nombre', $txtNombre);
             $sentencia->bindParam(':ApellidoP', $txtApellidoP);
@@ -30,7 +33,6 @@
         break;
 
         case "btnModificar":
-            echo "btnModificar";
             $sentencia = $pdo->prepare("UPDATE empleados SET Nombre=:Nombre, ApellidoP=:ApellidoP , ApellidoM=:ApellidoM ,Correo=:Correo  WHERE ID=:id");
             $sentencia->bindParam(':Nombre', $txtNombre);
             $sentencia->bindParam(':ApellidoP', $txtApellidoP);
@@ -53,7 +55,9 @@
 
                 if(isset($empleado["Foto"])){
                     if(file_exists("../Imagenes/".$empleado["Foto"])){
-                        unlink("../Imagenes/".$empleado["Foto"]);
+                        if($empleado['Foto'] != "imagen.png"){
+                            unlink("../Imagenes/".$empleado["Foto"]);
+                        }
                     }
                 }
                 // actualizamos el link de la foto subida
@@ -68,13 +72,12 @@
         break;
 
         case "btnEliminar":
-            echo "btnEliminar";
             $sentencia = $pdo->prepare("SELECT Foto FROM empleados WHERE ID=:id");
             $sentencia->bindParam(':id', $txtId);
             $sentencia->execute();
             $empleado = $sentencia->fetch(PDO::FETCH_LAZY);
 
-            if(isset($empleado["Foto"])){
+            if(isset($empleado["Foto"])&&($empleado["Foto"]!="imagen.png")){
                 if(file_exists("../Imagenes/".$empleado["Foto"])){
                     unlink("../Imagenes/".$empleado["Foto"]);
                 }
@@ -87,7 +90,24 @@
         break;
 
         case "btnCancelar":
-            echo "btnCancelar";
+            header('Location: index.php');
+        break;
+        case "Seleccionar":
+            $accionAgregar = "disabled";
+            $accionModificar = $accionEliminar = $accionCancelar = "";
+            $mostrarModal = true;
+
+            $sentencia = $pdo->prepare("SELECT * FROM empleados WHERE ID=:id");
+            $sentencia->bindParam(':id', $txtId);
+            $sentencia->execute();
+            $empleado = $sentencia->fetch(PDO::FETCH_LAZY);
+
+            $txtNombre = $empleado['Nombre'];
+            $txtApellidoP = $empleado['ApellidoP'];
+            $txtApellidoM = $empleado['ApellidoM'];
+            $txtCorreo = $empleado['Correo'];
+            $txtFoto = $empleado['Foto'];
+
         break;
     }
 
@@ -112,29 +132,68 @@
 <body>
     <div class="container">
         <form action="" method="post" enctype="multipart/form-data">
-        
-            <input type="hidden" required name="txtId" placeholder="" id="txtId" require="" value="<?php echo $txtId; ?>">
-        
-            <label for="txtNombre">Nombre:</label>
-            <input type="text" required name="txtNombre" placeholder="" id="txtNombre" require="" value="<?php echo $txtNombre; ?>">
-            <br>
-            <label for="txtApellidoP">Apellido:</label>
-            <input type="text" required name="txtApellidoP" placeholder="" id="txtApellidoP" require="" value="<?php echo $txtApellidoP; ?>">
-            <br>
-            <label for="txtApellidoM">Apellido:</label>
-            <input type="text" required name="txtApellidoM" placeholder="" id="txtApellidoM" require="" value="<?php echo $txtApellidoM; ?>">
-            <br>
-            <label for="txtCorreo">Correo:</label>
-            <input type="email" required name="txtCorreo" placeholder="" id="txtCorreo" require="" value="<?php echo $txtCorreo; ?>">
-            <br>
-            <label for="txtFoto">Foto:</label>
-            <input type="file" accept="image/*" name="txtFoto" placeholder="" id="txtFoto" require="" value="<?php echo $txtFoto; ?>">
-            <br>
+            <!-- Modal -->
+            <div class="modal fade" id="miModal" tabindex="-1" role="dialog" aria-labelledby="ModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="ModalLabel">Empleado</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-row">
+                            <input type="hidden" required name="txtId" placeholder="" id="txtId" require="" value="<?php echo $txtId; ?>">
+                            <div class="form-group col-md-4">
+                                <label for="txtNombre">Nombre:</label>
+                                <input type="text" class="form-control" required name="txtNombre" placeholder="" id="txtNombre" require="" value="<?php echo $txtNombre; ?>">
+                                <br>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label for="txtApellidoP">Apellido:</label>
+                                <input type="text" class="form-control" required name="txtApellidoP" placeholder="" id="txtApellidoP" require="" value="<?php echo $txtApellidoP; ?>">
+                                <br>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label for="txtApellidoM">Apellido:</label>
+                                <input type="text" class="form-control" required name="txtApellidoM" placeholder="" id="txtApellidoM" require="" value="<?php echo $txtApellidoM; ?>">
+                                <br>
+                            </div>
+                            <div class="form-group col-md-12">
+                                <label for="txtCorreo">Correo:</label>
+                                <input type="email" class="form-control" required name="txtCorreo" placeholder="" id="txtCorreo" require="" value="<?php echo $txtCorreo; ?>">
+                                <br>
+                            </div>
+                            <div class="form-group col-md-12">
+                                <label for="txtFoto">Foto:</label>
+                                <?php if($txtFoto != ""){  ?>
+                                <br>
+                                <img class="img-thumbnail rounded mx-auto d-block" width="100px" src="../Imagenes/<?php echo $txtFoto; ?>" alt="">
+                                <?php }?>
+                                <input type="file" class="form-control" accept="image/*" name="txtFoto" placeholder="" id="txtFoto" require="" value="<?php echo $txtFoto; ?>">
+                                <br>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button value="btnAgregar" <?php echo $accionAgregar; ?> class="btn btn-success" type="submit" name="accion">Agregar</button>
+                        <button value="btnModificar" <?php echo $accionModificar; ?> class="btn btn-warning" type="submit" name="accion">Modificar</button>
+                        <button value="btnEliminar" <?php echo $accionEliminar; ?> class="btn btn-danger" type="submit" name="accion">Eliminar</button>
+                        <button value="btnCancelar" <?php echo $accionCancelar; ?> class="btn btn-primary" type="submit" name="accion">Cancelar</button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+            <br/><br/>
+            <!-- Button trigger modal -->
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#miModal">
+            Agregar Registro +
+            </button>
+
             
-            <button value="btnAgregar" type="submit" name="accion">Agregar</button>
-            <button value="btnModificar" type="submit" name="accion">Modificar</button>
-            <button value="btnEliminar" type="submit" name="accion">Eliminar</button>
-            <button value="btnCancelar" type="submit" name="accion">Cancelar</button>
+            
+            
         </form>
 
         <div class="row">
@@ -156,13 +215,8 @@
                             <td>
                                 <form action="" method="post">
                                     <input type="hidden" name="txtId" value="<?php echo $empleado['ID']; ?>">
-                                    <input type="hidden" name="txtNombre" value="<?php echo $empleado['Nombre']; ?>">
-                                    <input type="hidden" name="txtApellidoP" value="<?php echo $empleado['ApellidoP']; ?>">
-                                    <input type="hidden" name="txtApellidoM" value="<?php echo $empleado['ApellidoM']; ?>">
-                                    <input type="hidden" name="txtCorreo" value="<?php echo $empleado['Correo']; ?>">
-                                    <input type="hidden" name="txtFoto" value="<?php echo $empleado['Foto']; ?>">
-                                    <input type="submit" value="Seleccionar" name="accion">
-                                    <button value="btnEliminar" type="submit" name="accion">Eliminar</button>
+                                    <input type="submit" class="btn btn-info" value="Seleccionar" name="accion">
+                                    <button value="btnEliminar" class="btn btn-danger" type="submit" name="accion">Eliminar</button>
                                 </form>
                             </td>
                         </tr>
@@ -170,6 +224,11 @@
                 <!-- </tbody> -->
             </table>
         </div>
+        <?php if($mostrarModal){  ?>
+            <script>
+                $('#miModal').modal('show');
+            </script>
+        <?php } ?>
     </div>
 </body>
 </html>
