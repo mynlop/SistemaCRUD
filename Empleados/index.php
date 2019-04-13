@@ -1,120 +1,5 @@
 <?php
-    $txtId = (isset($_POST['txtId'])) ? $_POST['txtId'] : "";
-    $txtNombre = (isset($_POST['txtNombre'])) ? $_POST['txtNombre'] : "";
-    $txtApellidoP = (isset($_POST['txtApellidoP'])) ? $_POST['txtApellidoP'] : "";
-    $txtApellidoM = (isset($_POST['txtApellidoM'])) ? $_POST['txtApellidoM'] : "";
-    $txtCorreo = (isset($_POST['txtCorreo'])) ? $_POST['txtCorreo'] : "";
-    $txtFoto = (isset($_FILES["txtFoto"]["name"])) ? $_FILES["txtFoto"]["name"] : "";
-
-    $accion = (isset($_POST['accion'])) ? $_POST['accion'] : "";
-
-    $accionAgregar = "";
-    $accionModificar = $accionEliminar = $accionCancelar = "disabled";
-    $mostrarModal = false;
-
-    include("../Conexion/conexion.php");
-
-    switch($accion){
-        case "btnAgregar":
-            $sentencia = $pdo->prepare("INSERT INTO empleados(Nombre,ApellidoP,ApellidoM,Correo,Foto) VALUES (:Nombre, :ApellidoP, :ApellidoM, :Correo, :Foto)");
-            $sentencia->bindParam(':Nombre', $txtNombre);
-            $sentencia->bindParam(':ApellidoP', $txtApellidoP);
-            $sentencia->bindParam(':ApellidoM', $txtApellidoM);
-            $sentencia->bindParam(':Correo', $txtCorreo);
-            $fecha = new DateTime();
-            $nombreArchivo = ($txtFoto!="")?$fecha->getTimestamp()."_".$_FILES["txtFoto"]["name"]:"imagen.png";
-            $tmpFoto = $_FILES["txtFoto"]["tmp_name"];
-            if($tmpFoto!=""){
-                move_uploaded_file($tmpFoto, "../Imagenes/" .$nombreArchivo);
-            }
-            $sentencia->bindParam(':Foto', $nombreArchivo);
-            $sentencia->execute();
-            header('Location: index.php');
-        break;
-
-        case "btnModificar":
-            $sentencia = $pdo->prepare("UPDATE empleados SET Nombre=:Nombre, ApellidoP=:ApellidoP , ApellidoM=:ApellidoM ,Correo=:Correo  WHERE ID=:id");
-            $sentencia->bindParam(':Nombre', $txtNombre);
-            $sentencia->bindParam(':ApellidoP', $txtApellidoP);
-            $sentencia->bindParam(':ApellidoM', $txtApellidoM);
-            $sentencia->bindParam(':Correo', $txtCorreo);
-            $sentencia->bindParam(':id', $txtId);
-            $sentencia->execute();
-
-            $fecha = new DateTime();
-            $nombreArchivo = ($txtFoto!="")?$fecha->getTimestamp()."_".$_FILES["txtFoto"]["name"]:"imagen.png";
-            $tmpFoto = $_FILES["txtFoto"]["tmp_name"];
-            if($tmpFoto!=""){
-                // subimos la foto al servidor
-                move_uploaded_file($tmpFoto, "../Imagenes/" .$nombreArchivo);
-                // eliminamos la fotografia actual
-                $sentencia = $pdo->prepare("SELECT Foto FROM empleados WHERE ID=:id");
-                $sentencia->bindParam(':id', $txtId);
-                $sentencia->execute();
-                $empleado = $sentencia->fetch(PDO::FETCH_LAZY);
-
-                if(isset($empleado["Foto"])){
-                    if(file_exists("../Imagenes/".$empleado["Foto"])){
-                        if($empleado['Foto'] != "imagen.png"){
-                            unlink("../Imagenes/".$empleado["Foto"]);
-                        }
-                    }
-                }
-                // actualizamos el link de la foto subida
-                $sentencia = $pdo->prepare("UPDATE empleados SET Foto=:Foto  WHERE ID=:id");
-                $sentencia->bindParam(':Foto', $nombreArchivo);
-                $sentencia->bindParam(':id', $txtId);
-                $sentencia->execute();
-                header('Location: index.php');
-            }
-
-            
-        break;
-
-        case "btnEliminar":
-            $sentencia = $pdo->prepare("SELECT Foto FROM empleados WHERE ID=:id");
-            $sentencia->bindParam(':id', $txtId);
-            $sentencia->execute();
-            $empleado = $sentencia->fetch(PDO::FETCH_LAZY);
-
-            if(isset($empleado["Foto"])&&($empleado["Foto"]!="imagen.png")){
-                if(file_exists("../Imagenes/".$empleado["Foto"])){
-                    unlink("../Imagenes/".$empleado["Foto"]);
-                }
-            }
-
-            $sentencia = $pdo->prepare("DELETE FROM empleados WHERE ID=:id");
-            $sentencia->bindParam(':id', $txtId);
-            $sentencia->execute();
-            header('Location: index.php');
-        break;
-
-        case "btnCancelar":
-            header('Location: index.php');
-        break;
-        case "Seleccionar":
-            $accionAgregar = "disabled";
-            $accionModificar = $accionEliminar = $accionCancelar = "";
-            $mostrarModal = true;
-
-            $sentencia = $pdo->prepare("SELECT * FROM empleados WHERE ID=:id");
-            $sentencia->bindParam(':id', $txtId);
-            $sentencia->execute();
-            $empleado = $sentencia->fetch(PDO::FETCH_LAZY);
-
-            $txtNombre = $empleado['Nombre'];
-            $txtApellidoP = $empleado['ApellidoP'];
-            $txtApellidoM = $empleado['ApellidoM'];
-            $txtCorreo = $empleado['Correo'];
-            $txtFoto = $empleado['Foto'];
-
-        break;
-    }
-
-    $sentencia = $pdo->prepare("SELECT * FROM empleados");
-    $sentencia->execute();
-    $listaEmpleados = $sentencia->fetchAll(PDO::FETCH_ASSOC);
-
+    require 'empleados.php';
 ?>
 
 <!DOCTYPE html>
@@ -145,24 +30,37 @@
                     <div class="modal-body">
                         <div class="form-row">
                             <input type="hidden" required name="txtId" placeholder="" id="txtId" require="" value="<?php echo $txtId; ?>">
+
                             <div class="form-group col-md-4">
                                 <label for="txtNombre">Nombre:</label>
-                                <input type="text" class="form-control" required name="txtNombre" placeholder="" id="txtNombre" require="" value="<?php echo $txtNombre; ?>">
+                                <input type="text" class="form-control <?php echo (isset($error['Nombre']))?"is-invalid":"";?>"  required name="txtNombre" placeholder="" id="txtNombre" require="" value="<?php echo $txtNombre; ?>">
+                                <div class="invalid-feedback">
+                                    <?php echo (isset($error['Nombre']))?$error['Nombre']:"";?>"
+                                </div>
                                 <br>
                             </div>
                             <div class="form-group col-md-4">
                                 <label for="txtApellidoP">Apellido:</label>
-                                <input type="text" class="form-control" required name="txtApellidoP" placeholder="" id="txtApellidoP" require="" value="<?php echo $txtApellidoP; ?>">
+                                <input type="text" class="form-control <?php echo (isset($error['ApellidoP']))?"is-invalid":"";?>" required  name="txtApellidoP" placeholder="" id="txtApellidoP" require="" value="<?php echo $txtApellidoP; ?>">
+                                <div class="invalid-feedback">
+                                    <?php echo (isset($error['ApellidoP']))?$error['ApellidoP']:"";?>
+                                </div>
                                 <br>
                             </div>
                             <div class="form-group col-md-4">
                                 <label for="txtApellidoM">Apellido:</label>
-                                <input type="text" class="form-control" required name="txtApellidoM" placeholder="" id="txtApellidoM" require="" value="<?php echo $txtApellidoM; ?>">
+                                <input type="text" class="form-control <?php echo (isset($error['ApellidoM']))?"is-invalid":"";?>" required  name="txtApellidoM" placeholder="" id="txtApellidoM" require="" value="<?php echo $txtApellidoM; ?>">
+                                <div class="invalid-feedback">
+                                    <?php echo (isset($error['ApellidoM']))?$error['ApellidoM']:"";?>
+                                </div>
                                 <br>
                             </div>
                             <div class="form-group col-md-12">
                                 <label for="txtCorreo">Correo:</label>
-                                <input type="email" class="form-control" required name="txtCorreo" placeholder="" id="txtCorreo" require="" value="<?php echo $txtCorreo; ?>">
+                                <input type="email" class="form-control <?php echo (isset($error['Correo']))?"is-invalid":"";?>" required  name="txtCorreo" placeholder="" id="txtCorreo" require="" value="<?php echo $txtCorreo; ?>">
+                                <div class="invalid-feedback">
+                                    <?php echo (isset($error['Correo']))?$error['Correo']:"";?>
+                                </div>
                                 <br>
                             </div>
                             <div class="form-group col-md-12">
@@ -179,7 +77,7 @@
                     <div class="modal-footer">
                         <button value="btnAgregar" <?php echo $accionAgregar; ?> class="btn btn-success" type="submit" name="accion">Agregar</button>
                         <button value="btnModificar" <?php echo $accionModificar; ?> class="btn btn-warning" type="submit" name="accion">Modificar</button>
-                        <button value="btnEliminar" <?php echo $accionEliminar; ?> class="btn btn-danger" type="submit" name="accion">Eliminar</button>
+                        <button value="btnEliminar" onClick="return Confirmar('Desea eliminar el empleado?');" <?php echo $accionEliminar; ?> class="btn btn-danger" type="submit" name="accion">Eliminar</button>
                         <button value="btnCancelar" <?php echo $accionCancelar; ?> class="btn btn-primary" type="submit" name="accion">Cancelar</button>
                     </div>
                     </div>
@@ -190,15 +88,11 @@
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#miModal">
             Agregar Registro +
             </button>
-
-            
-            
-            
         </form>
-
+        <br/><br/>                                    
         <div class="row">
-            <table class="table">
-                <thead>
+            <table class="table table-hover table-bordered text-center">
+                <thead class="thead-dark">
                     <tr>
                         <th>Foto</th>
                         <th>Nombre Completo</th>
@@ -214,9 +108,9 @@
                             <td><?php echo $empleado['Correo']; ?></td>
                             <td>
                                 <form action="" method="post">
-                                    <input type="hidden" name="txtId" value="<?php echo $empleado['ID']; ?>">
+                                    <input type="hidden" name="txtId" value="<?php echo $empleado['Id']; ?>">
                                     <input type="submit" class="btn btn-info" value="Seleccionar" name="accion">
-                                    <button value="btnEliminar" class="btn btn-danger" type="submit" name="accion">Eliminar</button>
+                                    <button value="btnEliminar" onClick="return Confirmar('Desea eliminar el empleado?');" class="btn btn-danger" type="submit" name="accion">Eliminar</button>
                                 </form>
                             </td>
                         </tr>
@@ -229,6 +123,11 @@
                 $('#miModal').modal('show');
             </script>
         <?php } ?>
+        <script>
+            function Confirmar(Mensaje){
+                return (confirm(Mensaje))?true:false;
+            }
+        </script>
     </div>
 </body>
 </html>
