@@ -40,7 +40,7 @@
                                 <br>
                             </div>
                             <div class="form-group col-md-4">
-                                <label for="txtApellidoP">Apellido:</label>
+                                <label for="txtApellidoP">Apellido #1:</label>
                                 <input type="text" class="form-control <?php echo (isset($error['ApellidoP']))?"is-invalid":"";?>" required  name="txtApellidoP" placeholder="" id="txtApellidoP" require="" value="<?php echo $txtApellidoP; ?>">
                                 <div class="invalid-feedback">
                                     <?php echo (isset($error['ApellidoP']))?$error['ApellidoP']:"";?>
@@ -48,7 +48,7 @@
                                 <br>
                             </div>
                             <div class="form-group col-md-4">
-                                <label for="txtApellidoM">Apellido:</label>
+                                <label for="txtApellidoM">Apellido #2:</label>
                                 <input type="text" class="form-control <?php echo (isset($error['ApellidoM']))?"is-invalid":"";?>" required  name="txtApellidoM" placeholder="" id="txtApellidoM" require="" value="<?php echo $txtApellidoM; ?>">
                                 <div class="invalid-feedback">
                                     <?php echo (isset($error['ApellidoM']))?$error['ApellidoM']:"";?>
